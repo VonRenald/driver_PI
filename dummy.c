@@ -48,6 +48,7 @@ inline void onewire_write_one(void);
 u8 onewire_read_byte(void);
 inline void onewire_write_zero(void);
 u8 onewire_crc8(const u8 *data, size_t len);
+void onewire_write_byte(u8 b);
 
 struct my_device_data {
     struct cdev cdev;
@@ -136,12 +137,39 @@ static int my_open(struct inode *inode, struct file *file)
     my_data->word[3] = 'I';
     my_data->word[4] = 'L';
 
+
+    
     int test = onewire_reset();
-    int test2 = onewire_read();
+    onewire_write_byte(0xCC);
     pr_warn("->");
+    pr_warn("%d\n",test);
+
+    onewire_write_byte(0x44);
+    int test2 = onewire_read_byte();
+    while( test2 == 0) 
+    { 
+        //pr_warn("sleep %d\n",test2); 
+        fsleep (10);
+        test2 = onewire_read_byte();
+    }
+    pr_warn(">%d\n",test2);
+
+    test = onewire_reset();
+    onewire_write_byte(0xCC);
+    pr_warn("->");
+    pr_warn("return reset : %d\n",test);
+    onewire_write_byte(0xBE);
+    //LSB 128 MSB 1    128 64 32 16 8 4 2 1
+    // 2^3
+    char lsb = onewire_read_byte(); 
+    pr_warn("LSB : %d\n",(int) lsb);
+    char msb = onewire_read_byte();
+    pr_warn("MSB : %d\n",msb);
+    int 
+    test = onewire_reset();
+    onewire_write_byte(0xCC);
 
 
-    pr_warn("%d %d\n",test,test2);
 
     return 0;
 }
