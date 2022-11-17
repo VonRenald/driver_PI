@@ -120,6 +120,20 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
     return (size+1);
 }
 
+static int my_read_temp(struct file *file, char __user *user_vuffer, size_t size, loff_t *offset)
+{
+    struct my_device_data *my_data;
+
+    my_data = (struct my_device_data *) file->private_data;
+    int i=0;
+    while(i<size){
+        user_vuffer[i] = my_data->word[i%my_data->len_word];
+        i++;
+    }
+    user_vuffer[i] = '\0';
+    return (size+1);
+}
+
 static int my_open(struct inode *inode, struct file *file)
 {
     struct my_device_data *my_data = container_of(inode->i_cdev, struct my_device_data, cdev);
@@ -163,12 +177,21 @@ static int my_open(struct inode *inode, struct file *file)
     // 2^3
     char lsb = onewire_read_byte(); 
     pr_warn("LSB : %d\n",(int) lsb);
+    pr_warn("LSB entier : %d\n",(int) lsb >> 4);
     char msb = onewire_read_byte();
     pr_warn("MSB : %d\n",msb);
-    int 
+
     test = onewire_reset();
     onewire_write_byte(0xCC);
 
+    char signe = msb & 0xb10000000;
+    msb =  msb & 0xb00000111;
+
+    lsb = lsb >> 4;
+    msb = msb << 4;
+    int temp = (signe == 1)? -(lsb+msb):lsb+msb;
+    
+    pr_warn("temp : %d",temp);
 
 
     return 0;
