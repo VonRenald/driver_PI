@@ -64,6 +64,18 @@ int main(int argc, char** argv)
     ret = read(file, tab, size);
     printf("ret : %d %s\n",ret,tab);
 
+
+    ioctl(file,MY_IOCTL_IN_TEMP , (unsigned long) data);
+
+
+    ret = read(file, tab, size);
+    printf("ret : %d %d\n",ret,tab[0]);
+
+    ioctl(file,MY_IOCTL_IN_STRING , (unsigned long) data);
+
+    ret = read(file, tab, 15);
+    printf("ret : %d %s\n",ret,tab);
+
     close(file);
     free(tab);
     free(test->word);

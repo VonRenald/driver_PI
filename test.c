@@ -15,6 +15,16 @@ int main()
 
     printf("signe : %d \n",signe);
     printf("temp : %d \n",temp);
+    char text[10];
+    sprintf(text,"%d",temp);
+    printf("%s\n",text);
+    for(int i = 0;i<10;i++)
+    {
+        printf("%c ",text[i]);
+        if(text[i] == '\0') {printf("o");}
+    }
+    printf("\n");
+
     // char a = 124;
     // int temp = a >> 4;
     // char b = 1;

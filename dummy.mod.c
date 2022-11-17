@@ -28,6 +28,7 @@ MODULE_INFO(retpoline, "Y");
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
 	{ 0x826b8746, "module_layout" },
+	{ 0xff178f6, "__aeabi_idivmod" },
 	{ 0xb7744793, "kmem_cache_alloc_trace" },
 	{ 0xbe301f03, "kmalloc_caches" },
 	{ 0xaa1f0d83, "gpiod_get_raw_value" },
@@ -50,10 +51,9 @@ __used __section("__versions") = {
 	{ 0x5f754e5a, "memset" },
 	{ 0xae353d77, "arm_copy_from_user" },
 	{ 0xb1ad28e0, "__gnu_mcount_nc" },
-	{ 0xff178f6, "__aeabi_idivmod" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "7B03E5D4BA16A1542C23178");
+MODULE_INFO(srcversion, "25AA075083EDBA5D997B1DC");

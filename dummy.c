@@ -39,6 +39,7 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
 static int my_release(struct inode *, struct file *);
 // static int my_write(struct file *file, const char __user *user_buffer,size_t size, loff_t * offset);
 static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg);
+static int my_read_temp(struct file *file, char __user *user_vuffer, size_t size, loff_t *offset);
 
 inline void onewire_high(void);
 inline void onewire_low(void);
@@ -50,12 +51,16 @@ inline void onewire_write_zero(void);
 u8 onewire_crc8(const u8 *data, size_t len);
 void onewire_write_byte(u8 b);
 
+enum read_type { STRING, TEMP};
+
 struct my_device_data {
     struct cdev cdev;
     int size;
     char buffer[10];
     char* word;
     int len_word;
+
+    enum read_type my_type;
     /* my data starts here */
     //...
 };
@@ -70,6 +75,7 @@ const struct file_operations my_fops = {
     // .write = my_write,
     .release = my_release,
     .unlocked_ioctl = my_ioctl
+
 };
 
 int init_module(void)
@@ -106,11 +112,19 @@ void cleanup_module(void)
 }
 
 /* my_open, my_read etc. to implement */
-static int my_read(struct file *file, char __user *user_vuffer, size_t size, loff_t *offset)
+static int my_read(struct file *file, char __user *user_vuffer, size_t size, loff_t *offset )
 {
+
+
     struct my_device_data *my_data;
 
     my_data = (struct my_device_data *) file->private_data;
+
+    if(my_data->my_type == TEMP)
+    {
+        return my_read_temp(file,user_vuffer,size,offset);
+    } 
+
     int i=0;
     while(i<size){
         user_vuffer[i] = my_data->word[i%my_data->len_word];
@@ -125,13 +139,64 @@ static int my_read_temp(struct file *file, char __user *user_vuffer, size_t size
     struct my_device_data *my_data;
 
     my_data = (struct my_device_data *) file->private_data;
-    int i=0;
-    while(i<size){
-        user_vuffer[i] = my_data->word[i%my_data->len_word];
-        i++;
+    
+
+
+    int test = onewire_reset();
+    onewire_write_byte(0xCC);
+    pr_warn("->");
+    pr_warn("%d\n",test);
+
+    onewire_write_byte(0x44);
+    int test2 = onewire_read_byte();
+    while( test2 == 0) 
+    { 
+        //pr_warn("sleep %d\n",test2); 
+        fsleep (10);
+        test2 = onewire_read_byte();
     }
-    user_vuffer[i] = '\0';
-    return (size+1);
+    pr_warn(">%d\n",test2);
+
+    test = onewire_reset();
+    onewire_write_byte(0xCC);
+    pr_warn("->");
+    pr_warn("return reset : %d\n",test);
+    onewire_write_byte(0xBE);
+    //LSB 128 MSB 1    128 64 32 16 8 4 2 1
+    // 2^3
+    char lsb = onewire_read_byte(); 
+    pr_warn("LSB : %d\n",(int) lsb);
+    pr_warn("LSB entier : %d\n",(int) lsb >> 4);
+    char msb = onewire_read_byte();
+    pr_warn("MSB : %d\n",msb);
+
+    test = onewire_reset();
+    onewire_write_byte(0xCC);
+
+    char signe = msb & 0xb10000000;
+    msb =  msb & 0xb00000111;
+
+    lsb = lsb >> 4;
+    msb = msb << 4;
+    int temp = (signe == 1)? -(lsb+msb):lsb+msb;
+    
+    pr_warn("temp : %d",temp);
+
+    // char str[10];
+    // sprintf(str,"%d",temp);
+
+    // int i = 0;
+    // while(i<10 && str[i] != '\0')
+    // {
+    //     user_vuffer[i] = str[i];
+    //     i++;
+    // }
+    // user_vuffer[i] = '\0';
+    // i++;
+
+    user_vuffer[0] = temp;
+
+    return (4);
 }
 
 static int my_open(struct inode *inode, struct file *file)
@@ -151,7 +216,7 @@ static int my_open(struct inode *inode, struct file *file)
     my_data->word[3] = 'I';
     my_data->word[4] = 'L';
 
-
+    my_data->my_type = STRING;
     
     int test = onewire_reset();
     onewire_write_byte(0xCC);
@@ -252,6 +317,15 @@ static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
         }
         return -EFAULT;
 
+        break;
+    
+    case MY_IOCTL_IN_TEMP:
+        pr_warn("Pos : string ok");
+        my_data->my_type = TEMP;
+        break;
+    case MY_IOCTL_IN_STRING:
+        pr_warn("Pos : string ok");
+        my_data->my_type = STRING;
         break;
     default:
         pr_warn("enter case default\n");
