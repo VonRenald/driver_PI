@@ -1,0 +1,1 @@
+cmd_/home/pi/Documents/git/driver_PI/readTemp/modules.order := {   echo /home/pi/Documents/git/driver_PI/readTemp/dummy.ko; :; } | awk '!x[$$0]++' - > /home/pi/Documents/git/driver_PI/readTemp/modules.order

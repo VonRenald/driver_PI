@@ -1,0 +1,1 @@
+cmd_/home/pi/Documents/git/driver_PI/readTemp/dummy.ko := ld -r -EL -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/pi/Documents/git/driver_PI/readTemp/dummy.ko /home/pi/Documents/git/driver_PI/readTemp/dummy.o /home/pi/Documents/git/driver_PI/readTemp/dummy.mod.o;  true
