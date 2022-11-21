@@ -50,6 +50,9 @@ struct my_device_data {
     // char* word;
     // int len_word;
 
+    int nb_capteur_connect;
+    unsigned long long int capteur[8];
+
     /* my data starts here */
     //...
 };
@@ -140,7 +143,6 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
     test = onewire_reset();
     onewire_write_byte(0xCC);
 
-    pr_warn("ici\n");
 
     char signe = msb & 0xb10000000;
     msb =  msb & 0xb00000111;
@@ -200,25 +202,68 @@ static int my_open(struct inode *inode, struct file *file)
     // my_data->word[3] = 'I';
     // my_data->word[4] = 'L';
 
+
     int ret; 
     ret = onewire_reset();
-    onewire_write_byte(0x33);
+    onewire_write_byte(0xF0);
     int br1, br2; 
-    br1 = onewire_read(); 
-    // onewire_low();
-    br2 = onewire_read(); 
-    pr_warn("bit read 1 %d %d\n",br1,br2);
-    onewire_write_zero();
+    int i;
+    char id_char[65];
+    char id_char2[65];
+    unsigned long long int id;
+    unsigned long long int ull_mask;
+    ull_mask = 1; //ull_mask = ull_mask << 63;
+    id = 0;
+    i=0;
+    while (i<64)
+    {
+        br1 = onewire_read(); 
+        br2 = onewire_read(); 
+        // pr_warn("bit read %d %d %d\n",i, br1, br2);
+        
+        id = id << 1;
+        if(br1 == 1) {
+            // pr_warn("write 1\n"); 
+            onewire_write_one();
+            id += ull_mask;
+        }
+        else {
+            // pr_warn("write 0\n"); 
+            onewire_write_zero();
+        }
+        id_char[i] = '0' + br1;
+        pr_warn("%llu\n",id); 
+        i++;
+    }
+    id_char[64] = '\0';
+    pr_warn("id : %s %llu\n",id_char,id);
+    
+    i=0;
+    ull_mask = 1;
+    while (i<64)
+    {
+        id_char2[63-i] = '0' + (id & ull_mask);
+        id = id >> 1;
+        i++;
+    }
+    id_char2[64] = '\0';
+    pr_warn("id : %s\n",id_char2);
 
-    br1 = onewire_read(); 
-    br2 = onewire_read(); 
-    pr_warn("bit read 2 %d %d\n",br1,br2);
+    // br1 = onewire_read(); 
+    // // onewire_low();
+    // br2 = onewire_read(); 
+    // pr_warn("bit read 1 %d %d\n",br1,br2);
+    // // onewire_write_zero();
 
-    onewire_write_one();
+    // br1 = onewire_read(); 
+    // br2 = onewire_read(); 
+    // pr_warn("bit read 2 %d %d\n",br1,br2);
 
-    br1 = onewire_read(); 
-    br2 = onewire_read(); 
-    pr_warn("bit read 3 %d %d\n",br1,br2);
+    // // onewire_write_one();
+
+    // br1 = onewire_read(); 
+    // br2 = onewire_read(); 
+    // pr_warn("bit read 3 %d %d\n",br1,br2);
     
 
     
@@ -424,4 +469,47 @@ u8 onewire_crc8(const u8 *data, size_t len)
 	}
 
 	return shift_register;
+}
+//retourn le nombre de cateur trouvé
+//ecrit les capteur dans my_data->capteur
+int serach_capteur(my_device_data* my_data)
+{
+    int ret; 
+    ret = onewire_reset();
+    onewire_write_byte(0xF0);
+
+    int br1, br2; 
+    int i;
+    char id_char[65];
+    char id_char2[65];
+    unsigned long long int id;
+    unsigned long long int ull_mask;
+    ull_mask = 1; //ull_mask = ull_mask << 63;
+    id = 0;
+    i=0;
+    while (i<64)
+    {
+        br1 = onewire_read(); 
+        br2 = onewire_read(); 
+        // pr_warn("bit read %d %d %d\n",i, br1, br2);
+        
+        id = id << 1;
+        if(br1 == 1) {
+            // pr_warn("write 1\n"); 
+            onewire_write_one();
+            id += ull_mask;
+        }
+        else {
+            // pr_warn("write 0\n"); 
+            onewire_write_zero();
+        }
+        id_char[i] = '0' + br1;
+        pr_warn("%llu\n",id); 
+        i++;
+    }
+}
+
+unsigned long long loop(unsigned long long id, int i)
+{
+    int br1, br2; 
 }
