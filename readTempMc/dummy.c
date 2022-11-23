@@ -41,7 +41,14 @@ inline void onewire_write_zero(void);
 u8 onewire_crc8(const u8 *data, size_t len);
 void onewire_write_byte(u8 b);
 
+int serach_capteur(my_device_data* my_data);
+
 enum read_type { STRING, TEMP};
+
+struct sav_rom_branch {
+    unsigned long long int rom;
+    unsigned char len;
+}
 
 struct my_device_data {
     struct cdev cdev;
@@ -273,23 +280,22 @@ static int my_release(struct inode *inode, struct file *file)
 {
     return 0;
 }
+/** write
+    // static int my_write(struct file *file, const char __user *user_buffer,size_t size, loff_t * offset)
+    // {
+    //     struct my_device_data *my_data = (struct my_device_data *) file->private_data;
+    //     ssize_t len = min(my_data->size - *offset, size);
 
-// static int my_write(struct file *file, const char __user *user_buffer,size_t size, loff_t * offset)
-// {
-//     struct my_device_data *my_data = (struct my_device_data *) file->private_data;
-//     ssize_t len = min(my_data->size - *offset, size);
+    //     if (len <= 0)
+    //         return 0;
 
-//     if (len <= 0)
-//         return 0;
+    //     if (copy_from_user(my_data->buffer + *offset, user_buffer, len))
+    //         return -EFAULT;
 
-//     /* read data from user buffer to my_data->buffer */
-//     if (copy_from_user(my_data->buffer + *offset, user_buffer, len))
-//         return -EFAULT;
-
-//     *offset += len;
-//     return len;
-// }
-
+    //     *offset += len;
+    //     return len;
+    // }
+**/
 static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
 {
     struct my_device_data *my_data = (struct my_device_data*) file->private_data;
@@ -329,8 +335,6 @@ static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
 
     return 0;
 }
-
-
 
 /* Fonctions onewire */
 inline void onewire_high(void)
@@ -474,42 +478,127 @@ u8 onewire_crc8(const u8 *data, size_t len)
 //ecrit les capteur dans my_data->capteur
 int serach_capteur(my_device_data* my_data)
 {
-    int ret; 
+    int ret, bit1, bit2, i, j; 
+    unsigned long long int id, mask;
+    sav_rom_branch step_branch[32];
+    unsigned char len_step_branch;
+
+
+    len_step_branch = 0;
+
+    i=0;
+    mask = 1;
     ret = onewire_reset();
     onewire_write_byte(0xF0);
-
-    int br1, br2; 
-    int i;
-    char id_char[65];
-    char id_char2[65];
-    unsigned long long int id;
-    unsigned long long int ull_mask;
-    ull_mask = 1; //ull_mask = ull_mask << 63;
     id = 0;
-    i=0;
     while (i<64)
     {
-        br1 = onewire_read(); 
-        br2 = onewire_read(); 
-        // pr_warn("bit read %d %d %d\n",i, br1, br2);
+        bit1 = onewire_read();
+        bit2 = onewire_read();
         
-        id = id << 1;
-        if(br1 == 1) {
-            // pr_warn("write 1\n"); 
-            onewire_write_one();
-            id += ull_mask;
-        }
-        else {
-            // pr_warn("write 0\n"); 
+
+        if(bit1 == 0 && bit2 == 0 )
+        {
+            step_branch[len_step_branch].rom = id;
+            step_branch[len_step_branch].len = i;
+            len_step_branch++;
+            id << 1;
             onewire_write_zero();
         }
-        id_char[i] = '0' + br1;
-        pr_warn("%llu\n",id); 
+        else 
+        {
+            id = id << 1;
+            if(bit1 == 1) {
+                onewire_write_one();
+                id += mask;
+            }
+            else {
+                onewire_write_zero();
+            }
+        }
         i++;
     }
+
+    i = 0;
+    while(i<len_step_branch)
+    {
+        id = step_branch[i].rom
+        ret = onewire_reset();
+        onewire_write_byte(0xF0);
+        j = 0;
+        while (j != step_branch[i].len)
+        {   
+            
+            bit1 = onewire_read();
+            bit2 = onewire_read();
+            if(((id >> j) & mask) == 1)
+            {onewire_write_one();}
+            else{onewire_write_zero();}
+            j++;
+        }
+        onewire_write_one();
+        id += mask;
+        while(j<64)
+        {
+            bit1 = onewire_read();
+            bit2 = onewire_read();
+            
+
+            if(bit1 == 0 && bit2 == 0 )
+            {
+                step_branch[len_step_branch].rom = id;
+                step_branch[len_step_branch].len = j;
+                len_step_branch++;
+                id << 1;
+                onewire_write_zero();
+            }
+            else 
+            {
+                id = id << 1;
+                if(bit1 == 1) {
+                    onewire_write_one();
+                    id += mask;
+                }
+                else {
+                    onewire_write_zero();
+                }
+            }
+            j++;
+        }
+        i++;
+    }
+    return 0;
+    // ret = onewire_reset();
+    // onewire_write_byte(0xF0);
+
+    // int br1, br2; 
+    // int i;
+    // char id_char[65];
+    // char id_char2[65];
+    // unsigned long long int id;
+    // unsigned long long int ull_mask;
+    // ull_mask = 1; //ull_mask = ull_mask << 63;
+    // id = 0;
+    // i=0;
+    // while (i<64)
+    // {
+    //     br1 = onewire_read(); 
+    //     br2 = onewire_read(); 
+    //     // pr_warn("bit read %d %d %d\n",i, br1, br2);
+        
+    //     id = id << 1;
+    //     if(br1 == 1) {
+    //         // pr_warn("write 1\n"); 
+    //         onewire_write_one();
+    //         id += ull_mask;
+    //     }
+    //     else {
+    //         // pr_warn("write 0\n"); 
+    //         onewire_write_zero();
+    //     }
+    //     id_char[i] = '0' + br1;
+    //     pr_warn("%llu\n",id); 
+    //     i++;
+    // }
 }
 
-unsigned long long loop(unsigned long long id, int i)
-{
-    int br1, br2; 
-}
