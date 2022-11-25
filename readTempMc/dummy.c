@@ -41,14 +41,14 @@ inline void onewire_write_zero(void);
 u8 onewire_crc8(const u8 *data, size_t len);
 void onewire_write_byte(u8 b);
 
-int serach_capteur(my_device_data* my_data);
+
 
 enum read_type { STRING, TEMP};
 
 struct sav_rom_branch {
-    unsigned long long int rom;
+    u64 rom;
     unsigned char len;
-}
+};
 
 struct my_device_data {
     struct cdev cdev;
@@ -58,12 +58,17 @@ struct my_device_data {
     // int len_word;
 
     int nb_capteur_connect;
-    unsigned long long int capteur[8];
+    u64 capteur[8];
 
     /* my data starts here */
     //...
 };
 
+int serach_capteur(struct my_device_data* my_data);
+void print_rom(u64 id);
+void match_rom(u64 id);
+void convT(void);
+int readTemp(char* str, int len_str);
 
 struct my_device_data devs[MY_MAX_MINORS];
 
@@ -119,63 +124,82 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
     
 
 
-    int test = onewire_reset();
-    onewire_write_byte(0xCC);
-    // pr_warn("->");
-    // pr_warn("%d\n",test);
+    // int test = onewire_reset();
+    // onewire_write_byte(0xCC);
+    // // pr_warn("->");
+    // // pr_warn("%d\n",test);
 
-    onewire_write_byte(0x44);
-    int test2 = onewire_read_byte();
-    while( test2 == 0) 
-    { 
-        //pr_warn("sleep %d\n",test2); 
-        fsleep (10);
-        test2 = onewire_read_byte();
-    }
-    // pr_warn(">%d\n",test2);
+    // onewire_write_byte(0x44);
+    // int test2 = onewire_read_byte();
+    // while( test2 == 0) 
+    // { 
+    //     //pr_warn("sleep %d\n",test2); 
+    //     fsleep (10);
+    //     test2 = onewire_read_byte();
+    // }
+    // // pr_warn(">%d\n",test2);
 
-    test = onewire_reset();
-    onewire_write_byte(0xCC);
-    // pr_warn("->");
-    // pr_warn("return reset : %d\n",test);
-    onewire_write_byte(0xBE);
-    //LSB 128 MSB 1    128 64 32 16 8 4 2 1
-    // 2^3
-    char lsb = onewire_read_byte(); 
-    // pr_warn("LSB : %d\n",(int) lsb);
-    // pr_warn("LSB entier : %d\n",(int) lsb >> 4);
-    char msb = onewire_read_byte();
-    // pr_warn("MSB : %d\n",msb);
+    // test = onewire_reset();
+    // onewire_write_byte(0xCC);
+    // // pr_warn("->");
+    // // pr_warn("return reset : %d\n",test);
+    // onewire_write_byte(0xBE);
+    // //LSB 128 MSB 1    128 64 32 16 8 4 2 1
+    // // 2^3
+    // char lsb = onewire_read_byte(); 
+    // // pr_warn("LSB : %d\n",(int) lsb);
+    // // pr_warn("LSB entier : %d\n",(int) lsb >> 4);
+    // char msb = onewire_read_byte();
+    // // pr_warn("MSB : %d\n",msb);
 
-    test = onewire_reset();
-    onewire_write_byte(0xCC);
+    // test = onewire_reset();
+    // onewire_write_byte(0xCC);
 
 
-    char signe = msb & 0xb10000000;
-    msb =  msb & 0xb00000111;
+    // char signe = msb & 0b10000000;
+    // msb =  msb & 0b00000111;
 
-    int floatingPart = (lsb & 0xb00001111);
-    int tempF = floatingPart * 625;
+    // int floatingPart = (lsb & 0b00001111);
+    // int tempF = floatingPart * 625;
     
-    lsb = lsb >> 4;
-    msb = msb << 4;
-    int tempI = (signe == 1)? -(lsb+msb):lsb+msb;
+    // lsb = lsb >> 4;
+    // msb = msb << 4;
+    // int tempI = (signe == 1)? -(lsb+msb):lsb+msb;
 
-    pr_warn("temp : %d %d %d\n",tempI, tempF, floatingPart);
+    // pr_warn("temp : %d %d %d\n",tempI, tempF, floatingPart);
 
-    
-
+    pr_warn("---\n");
 
     char str[255];
-    if(floatingPart == 1) {sprintf(str,"%d.0%d", tempI, tempF);}
-    else {sprintf(str,"%d.%d", tempI, tempF);}
-    pr_warn("str : %s\n", str);
-    int i = 0;
-    while (str[i] !='\0' && i < 255 && i<size) {i++;}
-    
-    //if(i>size){return 0;}
+    char final_str[255];
+    int i,len_str;
+    len_str = 0;
+    for(i=0;i<my_data->nb_capteur_connect;i++)
+    {
+         match_rom(my_data->capteur[i]);
+        convT();   
+        match_rom(my_data->capteur[i]);
+        onewire_write_byte(0xBE);
+        len_str = readTemp(str, 255);
+        if(i == 0)
+            sprintf(final_str,"C %d : %s",i,str);
+        else
+            sprintf(final_str,"%s\nC %d : %s",final_str,i,str);
+    }
 
-    copy_to_user(user_vuffer,str,i);
+    
+    // if(floatingPart == 1) {sprintf(str,"%d.0%d", tempI, tempF);}
+    // else {sprintf(str,"%d.%d", tempI, tempF);}
+    // pr_warn("str : %s\n", str);
+
+
+    i = 0;
+    while (final_str[i] !='\0' && i < 255 && i<size) {i++;}
+    pr_warn("%s\n",final_str);
+    pr_warn("i - %d\n",i);
+    if(i>size){return 0;}
+
+    copy_to_user(user_vuffer,final_str,i);
     
 
     // int i = 0;
@@ -210,51 +234,76 @@ static int my_open(struct inode *inode, struct file *file)
     // my_data->word[4] = 'L';
 
 
-    int ret; 
-    ret = onewire_reset();
-    onewire_write_byte(0xF0);
-    int br1, br2; 
-    int i;
-    char id_char[65];
-    char id_char2[65];
-    unsigned long long int id;
-    unsigned long long int ull_mask;
-    ull_mask = 1; //ull_mask = ull_mask << 63;
-    id = 0;
-    i=0;
-    while (i<64)
-    {
-        br1 = onewire_read(); 
-        br2 = onewire_read(); 
-        // pr_warn("bit read %d %d %d\n",i, br1, br2);
+    // int ret; 
+    // ret = onewire_reset();
+    // onewire_write_byte(0xF0);
+    // int br1, br2; 
+    // int i;
+    // char id_char[65];
+    // char id_char2[65];
+    // u64 id;
+    // u64 ull_mask;
+    // ull_mask = 1; //ull_mask = ull_mask << 63;
+    // id = 0;
+    // i=0;
+    // while (i<64)
+    // {
+    //     br1 = onewire_read(); 
+    //     br2 = onewire_read(); 
+    //     // pr_warn("bit read %d %d %d\n",i, br1, br2);
         
-        id = id << 1;
-        if(br1 == 1) {
-            // pr_warn("write 1\n"); 
-            onewire_write_one();
-            id += ull_mask;
-        }
-        else {
-            // pr_warn("write 0\n"); 
-            onewire_write_zero();
-        }
-        id_char[i] = '0' + br1;
-        pr_warn("%llu\n",id); 
-        i++;
-    }
-    id_char[64] = '\0';
-    pr_warn("id : %s %llu\n",id_char,id);
+    //     id = id << 1;
+    //     if(br1 == 1) {
+    //         // pr_warn("write 1\n"); 
+    //         onewire_write_one();
+    //         id += ull_mask;
+    //     }
+    //     else {
+    //         // pr_warn("write 0\n"); 
+    //         onewire_write_zero();
+    //     }
+    //     id_char[i] = '0' + br1;
+    //     // pr_warn("%llu\n",id); 
+    //     i++;
+    // }
+    // id_char[64] = '\0';
+    // // pr_warn("id : %s %llu\n",id_char,id);
     
-    i=0;
-    ull_mask = 1;
-    while (i<64)
-    {
-        id_char2[63-i] = '0' + (id & ull_mask);
-        id = id >> 1;
+
+    // print_rom(id);
+    pr_warn(">\n");
+    serach_capteur(my_data);
+    int i = 0;
+    while(i<my_data->nb_capteur_connect) {
+        print_rom(my_data->capteur[i]);
         i++;
     }
-    id_char2[64] = '\0';
-    pr_warn("id : %s\n",id_char2);
+    pr_warn("<\n");
+    // pr_warn("CAPTEUR : 1\n");
+    // match_rom(my_data->capteur[0]);
+    // convT();   
+    // match_rom(my_data->capteur[0]);
+    // onewire_write_byte(0xBE);
+    // readTemp();
+    // pr_warn("CAPTEUR : 2\n");
+    // match_rom(my_data->capteur[1]);
+    // convT();   
+    // match_rom(my_data->capteur[1]);
+    // onewire_write_byte(0xBE);
+    // readTemp();
+    // pr_warn("...\n");
+    // i=0;
+    // ull_mask = 1;
+    // while (i<64)
+    // {
+    //     id_char2[63-i] = '0' + (id & ull_mask);
+    //     id = id >> 1;
+    //     i++;
+    // }
+    // id_char2[64] = '\0';
+    // pr_warn("id : %s\n",id_char2);
+
+    
 
     // br1 = onewire_read(); 
     // // onewire_low();
@@ -476,33 +525,34 @@ u8 onewire_crc8(const u8 *data, size_t len)
 }
 //retourn le nombre de cateur trouvé
 //ecrit les capteur dans my_data->capteur
-int serach_capteur(my_device_data* my_data)
+int serach_capteur(struct my_device_data* my_data)
 {
+    
     int ret, bit1, bit2, i, j; 
-    unsigned long long int id, mask;
-    sav_rom_branch step_branch[32];
+    u64 id, mask;
+    struct sav_rom_branch step_branch[32];
     unsigned char len_step_branch;
-
+    bool isIn;
 
     len_step_branch = 0;
 
     i=0;
     mask = 1;
     ret = onewire_reset();
-    onewire_write_byte(0xF0);
+    onewire_write_byte(0xF0);//serach command
     id = 0;
-    while (i<64)
+    while (i<64) // parcour bit
     {
-        bit1 = onewire_read();
-        bit2 = onewire_read();
+        bit1 = onewire_read(); // bit
+        bit2 = onewire_read(); // complement
         
 
-        if(bit1 == 0 && bit2 == 0 )
+        if(bit1 == 0 && bit2 == 0 ) // 2 possibility
         {
             step_branch[len_step_branch].rom = id;
             step_branch[len_step_branch].len = i;
             len_step_branch++;
-            id << 1;
+            id = id << 1;
             onewire_write_zero();
         }
         else 
@@ -519,10 +569,23 @@ int serach_capteur(my_device_data* my_data)
         i++;
     }
 
+    // print_rom(id);
+    i=0;
+    isIn = false;
+    while(i<my_data->nb_capteur_connect){
+        isIn = isIn || (id == my_data->capteur[i]);
+        i++;
+    }
+    if (!isIn){
+        my_data->capteur[my_data->nb_capteur_connect] = id;
+        my_data->nb_capteur_connect++;    
+    }
+    
+
     i = 0;
     while(i<len_step_branch)
     {
-        id = step_branch[i].rom
+        id = step_branch[i].rom;
         ret = onewire_reset();
         onewire_write_byte(0xF0);
         j = 0;
@@ -531,41 +594,62 @@ int serach_capteur(my_device_data* my_data)
             
             bit1 = onewire_read();
             bit2 = onewire_read();
-            if(((id >> j) & mask) == 1)
+            // pr_warn("1 : %d -> %d,%d\t%llu\n",j, bit1, bit2, ((id >> (step_branch[i].len-j-1)) & mask));
+            if(((id >> (step_branch[i].len-j-1)) & mask) == 1)
             {onewire_write_one();}
             else{onewire_write_zero();}
             j++;
         }
+        bit1 = onewire_read();
+        bit2 = onewire_read();
+        // pr_warn("2 : %d -> %d,%d\n",j, bit1,bit2);
         onewire_write_one();
+        j++;
+        
+        id <<=1;
         id += mask;
         while(j<64)
         {
             bit1 = onewire_read();
             bit2 = onewire_read();
-            
+            // pr_warn("3 : %d -> %d,%d\n",j, bit1,bit2);
 
             if(bit1 == 0 && bit2 == 0 )
             {
                 step_branch[len_step_branch].rom = id;
                 step_branch[len_step_branch].len = j;
                 len_step_branch++;
-                id << 1;
+                id = id << 1;
                 onewire_write_zero();
             }
             else 
             {
+                
                 id = id << 1;
                 if(bit1 == 1) {
                     onewire_write_one();
                     id += mask;
+                    // pr_warn("ici\n");
                 }
                 else {
                     onewire_write_zero();
+                    // pr_warn("la\n");
                 }
             }
             j++;
         }
         i++;
+        // print_rom(id);
+        j=0;
+        isIn = false;
+        while(j<my_data->nb_capteur_connect){
+            isIn = isIn || (id == my_data->capteur[j]);
+            j++;
+        }
+        if (!isIn){
+            my_data->capteur[my_data->nb_capteur_connect] = id;
+            my_data->nb_capteur_connect++;    
+        }
     }
     return 0;
     // ret = onewire_reset();
@@ -575,8 +659,8 @@ int serach_capteur(my_device_data* my_data)
     // int i;
     // char id_char[65];
     // char id_char2[65];
-    // unsigned long long int id;
-    // unsigned long long int ull_mask;
+    // u64 id;
+    // u64 ull_mask;
     // ull_mask = 1; //ull_mask = ull_mask << 63;
     // id = 0;
     // i=0;
@@ -602,3 +686,142 @@ int serach_capteur(my_device_data* my_data)
     // }
 }
 
+void print_rom(u64 id)
+{
+    int i=0;
+    u64 mask = 1;
+    char str[65];
+    while(i<64)
+    {
+        str[63-i] = '0' + (char) (id>>i & 1);
+        //pr_warn("%llu\n", (id>>i & 1) );
+        i++;
+    }
+    str[64] = '\0';
+    pr_warn("ROM : %s\n",str);
+    return;
+}
+
+void match_rom(u64 id)
+{
+
+    onewire_reset();
+    onewire_write_byte(0x55);
+
+    u64 mask;
+    mask = 1;
+    mask = mask << 63;
+    // pr_warn(">%llu<\n",mask);
+    int i = 1;
+	for (; mask; mask >>= 1) {
+		if (id & mask){
+			onewire_write_one();
+            // pr_warn("%d 1\n",i);
+            }
+		else{
+			onewire_write_zero();
+            // pr_warn("%d 0\n",i);
+            }
+        i++;
+	}
+
+    // onewire_reset();
+    // onewire_write_byte(0x44);
+
+    // int test2 = onewire_read_byte();
+    // while( test2 == 0) 
+    // { 
+    //     //pr_warn("sleep %d\n",test2); 
+    //     fsleep (10);
+    //     test2 = onewire_read_byte();
+    // }
+
+
+
+    // //LSB 128 MSB 1    128 64 32 16 8 4 2 1
+    // // 2^3
+    // char lsb = onewire_read_byte(); 
+    // // pr_warn("LSB : %d\n",(int) lsb);
+    // // pr_warn("LSB entier : %d\n",(int) lsb >> 4);
+    // char msb = onewire_read_byte();
+
+    // pr_warn("%d %d\n",lsb,msb);
+
+    // char signe = msb & 0b10000000;
+    // msb =  msb & 0b00000111;
+
+    // int floatingPart = (lsb & 0b00001111);
+    // int tempF = floatingPart * 625;
+    
+    // lsb = lsb >> 4;
+    // msb = msb << 4;
+    // int tempI = (signe == 1)? -(lsb+msb):lsb+msb;
+
+    // pr_warn("temp : %d %d %d\n",tempI, tempF, floatingPart);
+
+    // char str[255];
+    // if(floatingPart == 1) {sprintf(str,"%d.0%d", tempI, tempF);}
+    // else {sprintf(str,"%d.%d", tempI, tempF);}
+    // pr_warn("str : %s\n", str);
+    // int i = 0;
+    // while (str[i] !='\0' && i < 255 ) {i++;}
+
+}
+
+void convT(void)
+{
+    onewire_write_byte(0x44);
+    onewire_high();
+	usleep_range(60, 65);
+
+    int test2 = onewire_read();
+    // pr_warn("convt : %d\n",test2);
+    while( test2 == 0) 
+    { 
+        //pr_warn("sleep %d\n",test2); 
+        usleep_range(200, 205);
+        test2 = onewire_read();
+        // pr_warn("convt : %d\n",test2);
+    }
+}
+
+int readTemp(char* str, int len_str)
+{
+    char lsb = onewire_read_byte(); 
+    // pr_warn("LSB : %d\n",(int) lsb);
+    // pr_warn("LSB entier : %d\n",(int) lsb >> 4);
+    char msb = onewire_read_byte();
+
+    pr_warn("%d %d\n",lsb,msb);
+
+    char signe = msb & 0b10000000;
+    msb =  msb & 0b00000111;
+
+    int floatingPart = (lsb & 0b00001111);
+    int tempF = floatingPart * 625;
+    
+    lsb = lsb >> 4;
+    msb = msb << 4;
+    int tempI = (signe == 1)? -(lsb+msb):lsb+msb;
+
+    pr_warn("temp : %d %d %d\n",tempI, tempF, floatingPart);
+
+    // char str[255];
+    if(floatingPart == 1) {sprintf(str,"%d.0%d", tempI, tempF);}
+    else {sprintf(str,"%d.%d", tempI, tempF);}
+    pr_warn("str : %s\n", str);
+    int i = 0;
+    while (str[i] !='\0' && i < len_str ) {i++;}
+    return i;
+}
+
+
+// 0000101000011110101011000001100001110000000000000000000111111111
+// 0000101010011000111100010101100001110000000000000000000000000101
+// 0000101010011000111100010101100001110000000000000000000000000101
+
+// 0001010100011000111100010101100001110000000000000000000000000101
+// 0001010000011000111100010101100001110000000000000000000000000101
+// 0001010010011000111100010101100001110000000000000000000000000101     le bon
+// 0000101010011000111100010101100001110000000000000000000000000101
+// 0001010000011110101011000001100001110000000000000000000010000101

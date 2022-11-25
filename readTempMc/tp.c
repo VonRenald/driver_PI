@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
+
 
 #include "ioctl.h"
 
@@ -32,19 +32,12 @@ int main(int argc, char** argv)
         exit(errno);
     }
     
-    int size = 255;
-    for(int i = 0; i< 10; i++)
-    {
-        char* tab;
-        tab = (char *) malloc( (size) * sizeof(char) ); 
-        int ret = 0;
-        ret = read(file, tab, size);
-        printf("ret : %d \n%s\n",ret,tab);
-        free(tab);
-        sleep(2);
-    }
-
-
+    int size = 10;
+    char* tab;
+    tab = (char *) malloc( (size) * sizeof(char) ); 
+    int ret = 0;
+    ret = read(file, tab, size);
+    printf("ret : %d %s\n",ret,tab);
 
     // struct my_data* data;
     // struct my_data* test;
