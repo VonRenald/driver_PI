@@ -6,8 +6,8 @@ default:
 	sudo rmmod dummy.ko || echo 'dummy already clean'
 	sudo insmod dummy.ko
 	sudo mknod /dev/TpTemp c 42 0 || echo 'file exist'
-	gcc tp0_2.c -o tp0_2
+	gcc main.c -o main
 clean:
 	make -C $(KDIR) M=$(shell pwd) clean
 	sudo rmmod dummy.ko; true
-	rm tp0_2
+	rm main
