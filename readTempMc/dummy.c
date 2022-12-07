@@ -52,16 +52,8 @@ struct sav_rom_branch {
 
 struct my_device_data {
     struct cdev cdev;
-    // int size;
-    // char buffer[10];
-    // char* word;
-    // int len_word;
-
     int nb_capteur_connect;
     u64 capteur[8];
-
-    /* my data starts here */
-    //...
 };
 
 int serach_capteur(struct my_device_data* my_data);
@@ -121,52 +113,6 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
     struct my_device_data *my_data;
 
     my_data = (struct my_device_data *) file->private_data;
-    
-
-
-    // int test = onewire_reset();
-    // onewire_write_byte(0xCC);
-    // // pr_warn("->");
-    // // pr_warn("%d\n",test);
-
-    // onewire_write_byte(0x44);
-    // int test2 = onewire_read_byte();
-    // while( test2 == 0) 
-    // { 
-    //     //pr_warn("sleep %d\n",test2); 
-    //     fsleep (10);
-    //     test2 = onewire_read_byte();
-    // }
-    // // pr_warn(">%d\n",test2);
-
-    // test = onewire_reset();
-    // onewire_write_byte(0xCC);
-    // // pr_warn("->");
-    // // pr_warn("return reset : %d\n",test);
-    // onewire_write_byte(0xBE);
-    // //LSB 128 MSB 1    128 64 32 16 8 4 2 1
-    // // 2^3
-    // char lsb = onewire_read_byte(); 
-    // // pr_warn("LSB : %d\n",(int) lsb);
-    // // pr_warn("LSB entier : %d\n",(int) lsb >> 4);
-    // char msb = onewire_read_byte();
-    // // pr_warn("MSB : %d\n",msb);
-
-    // test = onewire_reset();
-    // onewire_write_byte(0xCC);
-
-
-    // char signe = msb & 0b10000000;
-    // msb =  msb & 0b00000111;
-
-    // int floatingPart = (lsb & 0b00001111);
-    // int tempF = floatingPart * 625;
-    
-    // lsb = lsb >> 4;
-    // msb = msb << 4;
-    // int tempI = (signe == 1)? -(lsb+msb):lsb+msb;
-
-    // pr_warn("temp : %d %d %d\n",tempI, tempF, floatingPart);
 
     pr_warn("---\n");
 
@@ -187,10 +133,6 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
             sprintf(final_str,"%s\nC %d : %s",final_str,i,str);
     }
 
-    
-    // if(floatingPart == 1) {sprintf(str,"%d.0%d", tempI, tempF);}
-    // else {sprintf(str,"%d.%d", tempI, tempF);}
-    // pr_warn("str : %s\n", str);
 
 
     i = 0;
@@ -202,17 +144,6 @@ static int my_read(struct file *file, char __user *user_vuffer, size_t size, lof
     copy_to_user(user_vuffer,final_str,i);
     
 
-    // int i = 0;
-    // while(i<10 && str[i] != '\0')
-    // {
-    //     user_vuffer[i] = str[i];
-    //     i++;
-    // }
-    // user_vuffer[i] = '\0';
-    // i++;
-
-    // user_vuffer[0] =  temp;
-
     return (i);
 }
 
@@ -223,53 +154,6 @@ static int my_open(struct inode *inode, struct file *file)
     /* validate access to device */
     file->private_data = my_data;
 
-
-    /* initialize device */
-    // my_data->len_word = 5;
-    // my_data->word = kmalloc ((my_data->len_word)+1 , GFP_KERNEL);
-    // my_data->word[0] = 'S';
-    // my_data->word[1] = 'E';
-    // my_data->word[2] = 'C';
-    // my_data->word[3] = 'I';
-    // my_data->word[4] = 'L';
-
-
-    // int ret; 
-    // ret = onewire_reset();
-    // onewire_write_byte(0xF0);
-    // int br1, br2; 
-    // int i;
-    // char id_char[65];
-    // char id_char2[65];
-    // u64 id;
-    // u64 ull_mask;
-    // ull_mask = 1; //ull_mask = ull_mask << 63;
-    // id = 0;
-    // i=0;
-    // while (i<64)
-    // {
-    //     br1 = onewire_read(); 
-    //     br2 = onewire_read(); 
-    //     // pr_warn("bit read %d %d %d\n",i, br1, br2);
-        
-    //     id = id << 1;
-    //     if(br1 == 1) {
-    //         // pr_warn("write 1\n"); 
-    //         onewire_write_one();
-    //         id += ull_mask;
-    //     }
-    //     else {
-    //         // pr_warn("write 0\n"); 
-    //         onewire_write_zero();
-    //     }
-    //     id_char[i] = '0' + br1;
-    //     // pr_warn("%llu\n",id); 
-    //     i++;
-    // }
-    // id_char[64] = '\0';
-    // // pr_warn("id : %s %llu\n",id_char,id);
-    
-
     // print_rom(id);
     pr_warn(">\n");
     serach_capteur(my_data);
@@ -279,48 +163,7 @@ static int my_open(struct inode *inode, struct file *file)
         i++;
     }
     pr_warn("<\n");
-    // pr_warn("CAPTEUR : 1\n");
-    // match_rom(my_data->capteur[0]);
-    // convT();   
-    // match_rom(my_data->capteur[0]);
-    // onewire_write_byte(0xBE);
-    // readTemp();
-    // pr_warn("CAPTEUR : 2\n");
-    // match_rom(my_data->capteur[1]);
-    // convT();   
-    // match_rom(my_data->capteur[1]);
-    // onewire_write_byte(0xBE);
-    // readTemp();
-    // pr_warn("...\n");
-    // i=0;
-    // ull_mask = 1;
-    // while (i<64)
-    // {
-    //     id_char2[63-i] = '0' + (id & ull_mask);
-    //     id = id >> 1;
-    //     i++;
-    // }
-    // id_char2[64] = '\0';
-    // pr_warn("id : %s\n",id_char2);
-
-    
-
-    // br1 = onewire_read(); 
-    // // onewire_low();
-    // br2 = onewire_read(); 
-    // pr_warn("bit read 1 %d %d\n",br1,br2);
-    // // onewire_write_zero();
-
-    // br1 = onewire_read(); 
-    // br2 = onewire_read(); 
-    // pr_warn("bit read 2 %d %d\n",br1,br2);
-
-    // // onewire_write_one();
-
-    // br1 = onewire_read(); 
-    // br2 = onewire_read(); 
-    // pr_warn("bit read 3 %d %d\n",br1,br2);
-    
+  
 
     
     return 0;
@@ -329,22 +172,7 @@ static int my_release(struct inode *inode, struct file *file)
 {
     return 0;
 }
-/** write
-    // static int my_write(struct file *file, const char __user *user_buffer,size_t size, loff_t * offset)
-    // {
-    //     struct my_device_data *my_data = (struct my_device_data *) file->private_data;
-    //     ssize_t len = min(my_data->size - *offset, size);
 
-    //     if (len <= 0)
-    //         return 0;
-
-    //     if (copy_from_user(my_data->buffer + *offset, user_buffer, len))
-    //         return -EFAULT;
-
-    //     *offset += len;
-    //     return len;
-    // }
-**/
 static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
 {
     struct my_device_data *my_data = (struct my_device_data*) file->private_data;
@@ -353,29 +181,6 @@ static long my_ioctl (struct file *file, unsigned int cmd, unsigned long arg)
 
     switch(cmd) {
     case MY_IOCTL_IN:
-        
-
-        // int ret = copy_from_user(&mid, (struct My_ioctl_data *) arg, sizeof(struct my_ioctl_data));
-        // int i=0;
-        // while(i<my_data->len_word)
-        // {
-        //     pr_warn("%c",my_data->word[i]);  
-        //     i++;
-        // }
-
-        // pr_warn("my_data->len_word %d\n",my_data->len_word);
-        // my_data->len_word = mid.len_word;
-        // pr_warn("my_data->len_word %d\n",my_data->len_word);
-        // kfree(my_data->word);
-        // my_data->word = kmalloc ((my_data->len_word)+1 , GFP_KERNEL);
-        // copy_from_user(my_data->word,mid.word,my_data->len_word);
-        // i=0;
-        // while(i<my_data->len_word)
-        // {
-        //     pr_warn("%c",mid.word[i]);  
-        //     i++;
-        // }
-        // return -EFAULT;
 
         break;
     default:
@@ -541,6 +346,7 @@ int serach_capteur(struct my_device_data* my_data)
     ret = onewire_reset();
     onewire_write_byte(0xF0);//serach command
     id = 0;
+    // ETAPE 1  parcour une premiere fois une addresse pour trouver un capteur et les point de divergences
     while (i<64) // parcour bit
     {
         bit1 = onewire_read(); // bit
@@ -569,7 +375,7 @@ int serach_capteur(struct my_device_data* my_data)
         i++;
     }
 
-    // print_rom(id);
+    // verifie que le capteur n'est pas deja dans la liste des capteur connu 
     i=0;
     isIn = false;
     while(i<my_data->nb_capteur_connect){
@@ -581,7 +387,8 @@ int serach_capteur(struct my_device_data* my_data)
         my_data->nb_capteur_connect++;    
     }
     
-
+    // ETAPE 2  temps que la liste des points de divergence n'est pas vide, on parcourt les possibilité afin de decouvrire 
+    // les autres capteur et point de divergence
     i = 0;
     while(i<len_step_branch)
     {
@@ -652,38 +459,6 @@ int serach_capteur(struct my_device_data* my_data)
         }
     }
     return 0;
-    // ret = onewire_reset();
-    // onewire_write_byte(0xF0);
-
-    // int br1, br2; 
-    // int i;
-    // char id_char[65];
-    // char id_char2[65];
-    // u64 id;
-    // u64 ull_mask;
-    // ull_mask = 1; //ull_mask = ull_mask << 63;
-    // id = 0;
-    // i=0;
-    // while (i<64)
-    // {
-    //     br1 = onewire_read(); 
-    //     br2 = onewire_read(); 
-    //     // pr_warn("bit read %d %d %d\n",i, br1, br2);
-        
-    //     id = id << 1;
-    //     if(br1 == 1) {
-    //         // pr_warn("write 1\n"); 
-    //         onewire_write_one();
-    //         id += ull_mask;
-    //     }
-    //     else {
-    //         // pr_warn("write 0\n"); 
-    //         onewire_write_zero();
-    //     }
-    //     id_char[i] = '0' + br1;
-    //     pr_warn("%llu\n",id); 
-    //     i++;
-    // }
 }
 
 void print_rom(u64 id)
@@ -814,14 +589,3 @@ int readTemp(char* str, int len_str)
     while (str[i] !='\0' && i < len_str ) {i++;}
     return i;
 }
-
-
-// 0000101000011110101011000001100001110000000000000000000111111111
-// 0000101010011000111100010101100001110000000000000000000000000101
-// 0000101010011000111100010101100001110000000000000000000000000101
-
-// 0001010100011000111100010101100001110000000000000000000000000101
-// 0001010000011000111100010101100001110000000000000000000000000101
-// 0001010010011000111100010101100001110000000000000000000000000101     le bon
-// 0000101010011000111100010101100001110000000000000000000000000101
-// 0001010000011110101011000001100001110000000000000000000010000101
